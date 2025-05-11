@@ -1,0 +1,185 @@
+import { useState, useRef } from 'react'
+import { Button } from "/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "/components/ui/card"
+import { Input } from "/components/ui/input"
+import { Textarea } from "/components/ui/textarea"
+import { Search, Mic, Tag, Plus, X } from "lucide-react"
+
+type Note = {
+  id: string
+  content: string
+  tags: string[]
+  createdAt: Date
+}
+
+export default function VoiceNotes() {
+  const [notes, setNotes] = useState<Note[]>([])
+  const [currentText, setCurrentText] = useState('')
+  const [isRecording, setIsRecording] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [newTag, setNewTag] = useState('')
+  const [currentTags, setCurrentTags] = useState<string[]>([])
+  const recordingTimeoutRef = useRef<NodeJS.Timeout>()
+
+  const startRecording = () => {
+    setIsRecording(true)
+    // Simulate recording for 3 seconds
+    recordingTimeoutRef.current = setTimeout(() => {
+      stopRecording()
+    }, 3000)
+  }
+
+  const stopRecording = () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current)
+    }
+    setIsRecording(false)
+    // Simulate voice-to-text conversion with sample text
+    setCurrentText(prev => prev + (prev ? ' ' : '') + "This is a simulated voice-to-text conversion. You can edit this text before saving.")
+  }
+
+  const saveNote = () => {
+    if (!currentText.trim()) return
+    
+    const newNote: Note = {
+      id: Date.now().toString(),
+      content: currentText,
+      tags: currentTags,
+      createdAt: new Date()
+    }
+    
+    setNotes(prev => [newNote, ...prev])
+    setCurrentText('')
+    setCurrentTags([])
+  }
+
+  const addTag = () => {
+    if (newTag.trim() && !currentTags.includes(newTag.trim())) {
+      setCurrentTags(prev => [...prev, newTag.trim()])
+      setNewTag('')
+    }
+  }
+
+  const removeTag = (tagToRemove: string) => {
+    setCurrentTags(prev => prev.filter(tag => tag !== tagToRemove))
+  }
+
+  const filteredNotes = notes.filter(note => {
+    const matchesSearch = note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    return matchesSearch
+  })
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-center">Voice Notes</h1>
+        
+        {/* Search Bar */}
+        <div className="mb-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-x-0 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search notes..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Recording and Note Input */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>New Note</span>
+              <Button
+                variant={isRecording ? 'destructive' : 'outline'}
+                size="sm"
+                onClick={isRecording ? stopRecording : startRecording}
+              >
+                <Mic className="mr-2 h-4 w-4" />
+                {isRecording ? 'Stop Recording' : 'Start Recording'}
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              placeholder={isRecording ? 'Recording in progress...' : 'Speak or type your note...'}
+              className="min-h-32"
+              value={currentText}
+              onChange={(e) => setCurrentText(e.target.value)}
+              disabled={isRecording}
+            />
+            
+            {/* Tags Input */}
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Tag className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-500">Tags:</span>
+                {currentTags.map(tag => (
+                  <div key={tag} className="inline-flex items-center bg-gray-100 px-2 py-1 rounded-full text-sm">
+                    {tag}
+                    <button 
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a tag..."
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addTag()}
+                />
+                <Button variant="outline" size="sm" onClick={addTag}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button onClick={saveNote} disabled={!currentText.trim()}>
+              Save Note
+            </Button>
+          </CardFooter>
+        </Card>
+
+        {/* Notes List */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-2">Your Notes</h2>
+          
+          {filteredNotes.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">
+              {notes.length === 0 ? 'No notes yet. Record your first note!' : 'No notes match your search.'}
+            </p>
+          ) : (
+            filteredNotes.map(note => (
+              <Card key={note.id}>
+                <CardContent>
+                  <div className="pt-4">
+                    <p className="whitespace-pre-line">{note.content}</p>
+                    {note.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {note.tags.map(tag => (
+                          <span key={tag} className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 text-xs text-gray-500">
+                      {note.createdAt.toLocaleDateString()} at {note.createdAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
