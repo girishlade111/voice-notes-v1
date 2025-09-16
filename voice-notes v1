@@ -54,9 +54,10 @@ export default function VoiceNotes() {
   }
 
   const addTag = () => {
-    if (newTag.trim() && !currentTags.includes(newTag.trim())) {
-      setCurrentTags(prev => [...prev, newTag.trim()])
-      setNewTag('')
+    const trimmedTag = newTag.trim();
+    if (trimmedTag && !currentTags.some(tag => tag.toLowerCase() === trimmedTag.toLowerCase())) {
+      setCurrentTags(prev => [...prev, trimmedTag]);
+      setNewTag('');
     }
   }
 
